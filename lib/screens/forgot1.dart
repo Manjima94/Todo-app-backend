@@ -10,18 +10,19 @@ class Password1 extends StatefulWidget {
 }
 
 class _Password1State extends State<Password1> {
-  Future<bool> checkEmailExists(String email) async {
-    try {
-      var querysnapshot = await FirebaseFirestore.instance
-          .collection('Register')
-          .where('Email', isEqualTo: emailf)
-          .get();
-      return querysnapshot.docs.isNotEmpty;
-    } catch (e) {
-      print('Error : $e');
-      return false;
-    }
+Future<bool> checkEmailExists(String email) async {
+  try {
+    var querysnapshot = await FirebaseFirestore.instance
+        .collection('Register')
+        .where('Email', isEqualTo: email)
+        .get();
+    return querysnapshot.docs.isNotEmpty;
+  } catch (e) {
+    print('Error : $e');
+    return false;
   }
+}
+
 
   final formkey = GlobalKey<FormState>();
   var emailf = TextEditingController();
@@ -123,36 +124,43 @@ class _Password1State extends State<Password1> {
                   top: 20,
                 ),
                 child: ElevatedButton(
-                  onPressed: () async {
-                    if (formkey.currentState?.validate() ?? true) {
-                      bool emailExists = await checkEmailExists(emailf.text);
-                      if (emailExists) {
-                        print('exists');
-                      } else {
-                        print('Does not exist');
-                      }
-                    }
-                    if (pass.text == passc.text) {
-                      print('Equal');
-                      QuerySnapshot querySnapshot = await FirebaseFirestore
-                          .instance
-                          .collection('Register')
-                          .where('Email', isEqualTo: emailf.text)
-                          .get();
+                 onPressed: () async {
+  if (formkey.currentState!.validate()) {
+    // check if email exists
+    bool emailExists = await checkEmailExists(emailf.text);
+    if (!emailExists) {
+      print("Email does not exist");
+      return;
+    }
 
-                      if (querySnapshot.docs.isNotEmpty) {
-                        DocumentReference userDocRef =
-                            querySnapshot.docs.first.reference;
-                        await userDocRef.update({
-                          'Password': passc.text,
-                        });
-                        print('Passwor updated');
+    // password match check
+    if (pass.text != passc.text) {
+      print("Passwords do not match");
+      return;
+    }
 
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => page1(),
-                            ));
+    // update Firestore password
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('Register')
+        .where('Email', isEqualTo: emailf.text)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      DocumentReference userDocRef = querySnapshot.docs.first.reference;
+      await userDocRef.update({
+        'Password': passc.text,
+      });
+
+      print('Password updated');
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => page1()),
+      );
+    }
+  }
+}
+
                       } else {
                         print('Password donot match');
                       }
